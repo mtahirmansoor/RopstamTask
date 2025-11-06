@@ -1,0 +1,193 @@
+{% comment %}
+  Curtain Product Main Section
+  Compatible with product.json configuration
+{% endcomment %}
+
+{{ 'curtain-pricing.css' | asset_url | stylesheet_tag }}
+
+<section 
+  class="curtain-product-section {{ section.settings.media_position }}" 
+  style="background-color: {{ section.settings.bg_color }};"
+>
+  <div class="page-width">
+
+<div class="curtain-grid{% if section.settings.enable_sticky_info %} sticky-info{% endif %}{% if section.settings.media_position == 'right' %} right{% endif %}">
+
+      
+      <!-- LEFT: Product Media -->
+      <div class="curtain-media curtain-media--{{ section.settings.media_size }}">
+        {% if product.featured_media %}
+          <img 
+            src="{{ product.featured_media | img_url: '1000x' }}" 
+            alt="{{ product.title }}" 
+            class="curtain-image"
+            loading="lazy"
+          >
+        {% else %}
+          <div class="no-image">No Image Available</div>
+        {% endif %}
+      </div>
+
+      <!-- RIGHT: Product Information -->
+      <div class="curtain-info">
+        <h1 class="curtain-title">{{ product.title }}</h1>
+
+        {% if product.vendor != blank %}
+          <p class="curtain-vendor">{{ product.vendor }}</p>
+        {% endif %}
+
+        <div class="curtain-price-wrapper">
+          <p class="curtain-price" id="dynamic-price">{{ product.price | money }}</p>
+        </div>
+
+        {% if product.description != blank %}
+          <div class="curtain-description">{{ product.description }}</div>
+        {% endif %}
+
+        <!-- Add-to-Cart Form -->
+        <form id="curtain-form" class="curtain-form" method="post" action="/cart/add">
+          <input type="hidden" name="id" id="variant-id" value="">
+
+          <!-- Width Selection -->
+          <div class="form-field">
+            <label for="width-select">Width *</label>
+            <select id="width-select" name="properties[Width]" required>
+              <option value="">-- Select Width --</option>
+              {% if product.metafields.custom.width_options != blank %}
+                {% assign widths = product.metafields.custom.width_options | split: ',' %}
+                {% for width in widths %}
+                  {% assign width_clean = width | strip %}
+                  <option value="{{ width_clean }}">{{ width_clean }}cm</option>
+                {% endfor %}
+              {% else %}
+                <option value="100">100cm</option>
+                <option value="150">150cm</option>
+                <option value="200">200cm</option>
+                <option value="250">250cm</option>
+                <option value="300">300cm</option>
+              {% endif %}
+            </select>
+          </div>
+
+          <!-- Drop Selection -->
+          <div class="form-field">
+            <label for="drop-select">Drop *</label>
+            <select id="drop-select" name="properties[Drop]" required>
+              <option value="">-- Select Drop --</option>
+              {%- assign unique_drops = '' | split: '' -%}
+              {%- for variant in product.variants -%}
+                {%- assign drop_value = variant.option1 -%}
+                {%- unless unique_drops contains drop_value -%}
+                  {%- assign unique_drops = unique_drops | append: drop_value | append: ',' -%}
+                  <option value="{{ drop_value }}">{{ drop_value }}</option>
+                {%- endunless -%}
+              {%- endfor -%}
+            </select>
+          </div>
+
+          <!-- Quantity -->
+          <div class="form-field">
+            <label for="quantity">Quantity</label>
+            <div class="quantity-selector">
+              <button type="button" class="qty-btn" id="qty-minus">−</button>
+              <input type="number" id="quantity" name="quantity" value="1" min="1">
+              <button type="button" class="qty-btn" id="qty-plus">+</button>
+            </div>
+          </div>
+
+          <!-- Hidden Panels Field -->
+          <input type="hidden" name="properties[Fabric Panels]" id="fabric-panels-hidden">
+
+          <!-- Add to Cart Button -->
+          <button type="submit" id="add-to-cart-btn" class="curtain-btn" disabled>
+            <span id="btn-text">Add to Cart</span>
+            <span id="btn-price"></span>
+          </button>
+
+          {% if section.settings.show_debug %}
+            <div class="debug-box">
+              <h4>Debug Info:</h4>
+              <p>Width: <strong id="debug-width">-</strong></p>
+              <p>Fabric Panels: <strong id="debug-panels">-</strong></p>
+              <p>Drop: <strong id="debug-drop">-</strong></p>
+              <p>Variant ID: <strong id="debug-variant">-</strong></p>
+              <p>Price: <strong id="debug-price">-</strong></p>
+            </div>
+          {% endif %}
+        </form>
+
+        <script id="product-data" type="application/json">
+          {
+            "variants": [
+              {%- for variant in product.variants -%}
+              {
+                "id": {{ variant.id }},
+                "option1": {{ variant.option1 | json }},
+                "option2": {{ variant.option2 | json }},
+                "price": {{ variant.price }},
+                "available": {{ variant.available | json }}
+              }{% unless forloop.last %},{% endunless %}
+              {%- endfor -%}
+            ],
+            "fabricPanelMapping": {{ product.metafields.custom.fabric_panel_mapping | json }},
+            "pricingMatrix": {{ product.metafields.custom.pricing_matrix | json }}
+          }
+        </script>
+      </div>
+    </div>
+  </div>
+</section>
+
+{{ 'curtain-pricing.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Curtain Product Main",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_sticky_info",
+      "label": "Enable Sticky Info",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "media_size",
+      "label": "Media Size",
+      "options": [
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" }
+      ],
+      "default": "large"
+    },
+    {
+      "type": "select",
+      "id": "media_position",
+      "label": "Media Position",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_debug",
+      "label": "Show Debug Info",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background Color",
+      "default": "#ffffff"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Curtain Product Main"
+    }
+  ]
+}
+{% endschema %}

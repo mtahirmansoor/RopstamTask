@@ -1,0 +1,270 @@
+{% stylesheet %}
+.curtain-product-section {
+  padding: 40px 0;
+  background: var(--section-bg, #fff);
+  transition: background 0.3s ease;
+}
+
+/* Center container */
+.page-width {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Grid Layout */
+.curtain-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: flex-start;
+}
+
+.curtain-grid.right {
+  direction: rtl;
+}
+
+.curtain-grid.right .curtain-info {
+  direction: ltr;
+}
+
+/* ✅ Sticky Info Fix */
+.curtain-grid.sticky-info {
+  align-items: start;
+}
+
+.curtain-grid.sticky-info .curtain-info {
+  position: sticky;
+  top: 100px; /* Adjust this based on your header height */
+  align-self: start;
+}
+
+/* Media Area */
+.curtain-media {
+  position: relative;
+}
+
+.curtain-media--small img {
+  max-width: 80%;
+}
+
+.curtain-media--medium img {
+  max-width: 100%;
+}
+
+.curtain-media--large img {
+  width: 100%;
+}
+
+.curtain-image {
+  width: 100%;
+  border-radius: 10px;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.curtain-image:hover {
+  transform: scale(1.02);
+}
+
+.no-image {
+  width: 100%;
+  height: 400px;
+  background: #f4f4f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  border-radius: 10px;
+}
+
+/* Info */
+.curtain-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.curtain-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: #111;
+}
+
+.curtain-vendor {
+  color: #666;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 20px;
+}
+
+.curtain-price-wrapper {
+  margin: 20px 0;
+}
+
+.curtain-price {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+  color: #222;
+}
+
+.curtain-description {
+  margin: 20px 0;
+  line-height: 1.7;
+  color: #444;
+}
+.curtain-product-section.right .curtain-grid {
+  flex-direction: row-reverse;
+}
+/* Form styling */
+.curtain-form {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  background: #fff;
+  transition: border 0.2s ease;
+}
+
+.form-field select:focus {
+  outline: none;
+  border-color: #111;
+}
+
+/* Quantity */
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  width: 160px;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.qty-btn {
+  width: 40px;
+  height: 44px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+  color: #111;
+  transition: background 0.2s ease;
+}
+
+.qty-btn:hover {
+  background: #f4f4f4;
+}
+
+#quantity {
+  width: 80px;
+  height: 44px;
+  text-align: center;
+  border: none;
+  border-left: 1.5px solid #ddd;
+  border-right: 1.5px solid #ddd;
+  font-size: 15px;
+}
+
+/* Add to cart */
+.curtain-btn {
+  width: 100%;
+  padding: 16px 24px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.curtain-btn:hover:not(:disabled) {
+  background: #222;
+}
+
+.curtain-btn:active {
+  transform: scale(0.98);
+}
+
+.curtain-btn:disabled {
+  background: #ccc;
+  color: #777;
+  cursor: not-allowed;
+}
+
+/* Debug Box */
+.debug-box {
+  margin-top: 30px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  font-family: monospace;
+}
+
+.debug-box h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: #222;
+}
+
+.debug-box p {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .curtain-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .curtain-media {
+    position: static;
+  }
+
+  .curtain-title {
+    font-size: 26px;
+  }
+
+  .curtain-price {
+    font-size: 22px;
+  }
+
+  .curtain-btn {
+    font-size: 15px;
+  }
+}
+{% endstylesheet %}

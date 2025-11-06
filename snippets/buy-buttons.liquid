@@ -1,0 +1,337 @@
+{% comment %}
+  Renders product buy-buttons with bundle sub-line integration.
+  Accepts:
+  - product: {Object} product object.
+  - block: {Object} passing the block information.
+  - product_form_id: {String} product form id.
+  - section_id: {String} id of section to which this snippet belongs.
+  - show_pickup_availability: {Boolean} for the pickup availability. If true the pickup availability is rendered, false - not rendered (optional).
+
+  Usage:
+  {% render 'buy-buttons', block: block, product: product, product_form_id: product_form_id, section_id: section.id, show_pickup_availability: true %}
+{% endcomment %}
+<div {{ block.shopify_attributes }}>
+  {%- if product != blank -%}
+    {%- liquid
+      assign gift_card_recipient_feature_active = false
+      if block.settings.show_gift_card_recipient and product.gift_card?
+        assign gift_card_recipient_feature_active = true
+      endif
+
+      assign show_dynamic_checkout = false
+      if block.settings.show_dynamic_checkout and gift_card_recipient_feature_active == false
+        assign show_dynamic_checkout = true
+      endif
+    -%}
+
+    <product-form
+      class="product-form"
+      data-hide-errors="{{ gift_card_recipient_feature_active }}"
+      data-section-id="{{ section.id }}"
+    >
+      <div class="product-form__error-message-wrapper" role="alert" hidden>
+        <span class="svg-wrapper">
+          {{- 'icon-error.svg' | inline_asset_content -}}
+        </span>
+        <span class="product-form__error-message"></span>
+      </div>
+
+      {%- form 'product',
+        product,
+        id: product_form_id,
+        class: 'form',
+        novalidate: 'novalidate',
+        data-type: 'add-to-cart-form'
+      -%}
+        <input
+          type="hidden"
+          name="id"
+          value="{{ product.selected_or_first_available_variant.id }}"
+          {% if product.selected_or_first_available_variant.available == false
+            or quantity_rule_soldout
+            or product.selected_or_first_available_variant == null
+          %}
+            disabled
+          {% endif %}
+          class="product-variant-id"
+        >
+
+        {%- if gift_card_recipient_feature_active -%}
+          {%- render 'gift-card-recipient-form', product: product, form: form, section: section -%}
+        {%- endif -%}
+
+        <div class="product-form__buttons">
+          {%- liquid
+            assign check_against_inventory = true
+            if product.selected_or_first_available_variant.inventory_management != 'shopify' or product.selected_or_first_available_variant.inventory_policy == 'continue'
+              assign check_against_inventory = false
+            endif
+            if product.selected_or_first_available_variant.quantity_rule.min > product.selected_or_first_available_variant.inventory_quantity and check_against_inventory
+              assign quantity_rule_soldout = true
+            endif
+          -%}
+          <button
+            id="ProductSubmitButton-{{ section_id }}"
+            type="submit"
+            name="add"
+            class="product-form__submit button button--full-width {% if show_dynamic_checkout %}button--secondary{% else %}button--primary{% endif %}"
+            {% if product.selected_or_first_available_variant.available == false
+              or quantity_rule_soldout
+              or product.selected_or_first_available_variant == null
+            %}
+              disabled
+            {% endif %}
+          >
+            <span>
+              {%- if product.selected_or_first_available_variant == null -%}
+                {{ 'products.product.unavailable' | t }}
+              {%- elsif product.selected_or_first_available_variant.available == false or quantity_rule_soldout -%}
+                {{ 'products.product.sold_out' | t }}
+              {%- else -%}
+                {{ 'products.product.add_to_cart' | t }}
+              {%- endif -%}
+            </span>
+            {%- render 'loading-spinner' -%}
+          </button>
+          {%- if show_dynamic_checkout -%}
+            {{ form | payment_button }}
+          {%- endif -%}
+        </div>
+      {%- endform -%}
+    </product-form>
+  {%- else -%}
+    <div class="product-form">
+      <div class="product-form__buttons form">
+        <button
+          type="submit"
+          name="add"
+          class="product-form__submit button button--full-width button--primary"
+          disabled
+        >
+          {{ 'products.product.sold_out' | t }}
+        </button>
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- if show_pickup_availability -%}
+    {{ 'component-pickup-availability.css' | asset_url | stylesheet_tag }}
+
+    {%- assign pick_up_availabilities = product.selected_or_first_available_variant.store_availabilities
+      | where: 'pick_up_enabled', true
+    -%}
+
+    <pickup-availability
+      class="product__pickup-availabilities quick-add-hidden"
+      {% if product.selected_or_first_available_variant.available and pick_up_availabilities.size > 0 %}
+        available
+      {% endif %}
+      data-root-url="{{ routes.root_url }}"
+      data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+      data-has-only-default-variant="{{ product.has_only_default_variant }}"
+      data-product-page-color-scheme="gradient color-{{ section.settings.color_scheme }}"
+    >
+      <template>
+        <pickup-availability-preview class="pickup-availability-preview">
+          <span class="svg-wrapper">
+            {{- 'icon-unavailable.svg' | inline_asset_content -}}
+          </span>
+          <div class="pickup-availability-info">
+            <p class="caption-large">{{ 'products.product.pickup_availability.unavailable' | t }}</p>
+            <button class="pickup-availability-button link link--text underlined-link">
+              {{ 'products.product.pickup_availability.refresh' | t }}
+            </button>
+          </div>
+        </pickup-availability-preview>
+      </template>
+    </pickup-availability>
+
+    <script src="{{ 'pickup-availability.js' | asset_url }}" defer="defer"></script>
+  {%- endif -%}
+</div>
+
+<script>
+(function() {
+  // Bundle Sub-line Integration Script
+  var productForm = document.getElementById('{{ product_form_id }}');
+  if (!productForm) return;
+
+  productForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Get all bundle containers on the page
+    var bundleContainers = document.querySelectorAll('[data-bundle-container]');
+    var allBundleData = [];
+    
+    // Collect bundle items from all bundle upsells
+    bundleContainers.forEach(function(container) {
+      var blockId = container.dataset.bundleContainer;
+      var collectFunction = window['collectBundleItems_' + blockId];
+      
+      if (collectFunction) {
+        var bundleData = collectFunction();
+        if (bundleData.allCompleted && bundleData.items.length > 0) {
+          allBundleData.push(bundleData);
+        }
+      }
+    });
+
+    // Get main product data
+    var formData = new FormData(productForm);
+    var mainProductId = formData.get('id');
+    var mainProductQuantity = formData.get('quantity') || 1;
+    
+    // Generate unique bundle group ID
+    var bundleGroupId = 'bundle-group-' + Date.now();
+    
+    // Prepare items array
+    var itemsToAdd = [];
+    
+    // Add main product with bundle parent marker if bundles exist
+    if (mainProductId) {
+      var mainProductItem = {
+        id: parseInt(mainProductId),
+        quantity: parseInt(mainProductQuantity),
+        properties: {}
+      };
+      
+      // Include any additional form properties for main product
+      for (var pair of formData.entries()) {
+        if (pair[0].startsWith('properties[')) {
+          var propKey = pair[0].replace('properties[', '').replace(']', '');
+          mainProductItem.properties[propKey] = pair[1];
+        }
+      }
+      
+      // Mark main product as bundle parent if bundles exist
+      if (allBundleData.length > 0) {
+        mainProductItem.properties['_has_bundle'] = 'true';
+        mainProductItem.properties['_bundle_group_id'] = bundleGroupId;
+        
+        // Add bundle summary to main product
+        var bundleSummary = allBundleData.map(function(bd) {
+          return bd.pairCount + ' × ' + bd.bundleTitle + ' (' + bd.discountPercent + '% off)';
+        }).join(' + ');
+        mainProductItem.properties['_bundle_includes'] = bundleSummary;
+      }
+      
+      itemsToAdd.push(mainProductItem);
+    }
+    
+    // Add bundle items with parent reference
+    if (allBundleData.length > 0) {
+      allBundleData.forEach(function(bundleData) {
+        bundleData.items.forEach(function(item) {
+          // Update properties to reference the parent
+          item.properties['_bundle_group_id'] = bundleGroupId;
+          item.properties['_bundle_parent'] = 'Main Product';
+          item.properties['_is_bundle_item'] = 'true';
+          itemsToAdd.push(item);
+        });
+      });
+    }
+
+    // Disable submit button and show loading state
+    var submitBtn = productForm.querySelector('[type="submit"]');
+    var originalBtnText = submitBtn.querySelector('span').textContent;
+    submitBtn.disabled = true;
+    submitBtn.querySelector('span').textContent = 'Adding...';
+
+    // Add all items to cart using items API
+    fetch('/cart/add.js', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ items: itemsToAdd })
+    })
+    .then(function(response) {
+      if (!response.ok) {
+        return response.json().then(function(err) {
+          throw err;
+        });
+      }
+      return response.json();
+    })
+    .then(function(data) {
+      // Success - trigger cart update events
+      document.dispatchEvent(new CustomEvent('cart:items-added', { 
+        detail: { 
+          items: data.items,
+          hasBundle: allBundleData.length > 0
+        } 
+      }));
+      
+      // Publish theme event for cart drawer/notification
+      if (window.Shopify && window.Shopify.theme && typeof publish !== 'undefined') {
+        publish(PUB_SUB_EVENTS.cartUpdate, { source: 'product-form' });
+      }
+      
+      // Update cart count
+      fetch('/cart.js')
+        .then(function(res) { return res.json(); })
+        .then(function(cart) {
+          var cartCountElements = document.querySelectorAll('.cart-count-bubble span, [data-cart-count]');
+          cartCountElements.forEach(function(el) {
+            el.textContent = cart.item_count;
+          });
+        });
+      
+      // Show success message or open cart drawer
+      var cartDrawer = document.querySelector('cart-drawer');
+      var cartNotification = document.querySelector('cart-notification');
+      
+      if (cartDrawer) {
+        cartDrawer.open();
+      } else if (cartNotification) {
+        cartNotification.open();
+      } else {
+        // Fallback: show detailed alert
+        var itemCount = itemsToAdd.length;
+        var bundleCount = allBundleData.reduce(function(sum, bd) { 
+          return sum + bd.items.length; 
+        }, 0);
+        
+        var message = 'Added to cart:\n';
+        message += '✓ 1 × Main Product\n';
+        if (bundleCount > 0) {
+          message += '✓ ' + bundleCount + ' × Bundle Items (grouped)\n';
+        }
+        message += '\nTotal: ' + itemCount + ' item' + (itemCount > 1 ? 's' : '');
+        alert(message);
+      }
+      
+      // Re-enable button
+      submitBtn.disabled = false;
+      submitBtn.querySelector('span').textContent = originalBtnText;
+    })
+    .catch(function(error) {
+      console.error('Error adding to cart:', error);
+      
+      // Show error message
+      var errorMsg = error.description || error.message || 'Unable to add items to cart. Please try again.';
+      
+      var errorWrapper = productForm.querySelector('.product-form__error-message-wrapper');
+      if (errorWrapper) {
+        var errorSpan = errorWrapper.querySelector('.product-form__error-message');
+        if (errorSpan) {
+          errorSpan.textContent = errorMsg;
+          errorWrapper.removeAttribute('hidden');
+          
+          // Auto-hide error after 5 seconds
+          setTimeout(function() {
+            errorWrapper.setAttribute('hidden', '');
+          }, 5000);
+        }
+      } else {
+        alert(errorMsg);
+      }
+      
+      // Re-enable button
+      submitBtn.disabled = false;
+      submitBtn.querySelector('span').textContent = originalBtnText;
+    });
+  });
+})();
+</script>
