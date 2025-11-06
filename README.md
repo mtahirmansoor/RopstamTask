@@ -18,3 +18,4 @@ Adds selected options to cart via AJAX with all custom attributes.
 
 Preview link: https://themexperts.myshopify.com/products/net-curtains-polyester-sheer-panel-brown?variant=47217110745344
 pass: 1
+video link: https://drive.google.com/file/d/1kMh95xBj0awZTDpoFrbjpcD5QvV-bS8E/view?usp=sharing
