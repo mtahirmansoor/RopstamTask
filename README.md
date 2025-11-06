@@ -15,3 +15,6 @@ Matches the correct variant using selected drop and calculated panels.
 Updates and displays total price = variant price × quantity in real time.
 
 Adds selected options to cart via AJAX with all custom attributes.
+
+Preview link: https://themexperts.myshopify.com/products/net-curtains-polyester-sheer-panel-brown?variant=47217110745344
+pass: 1
